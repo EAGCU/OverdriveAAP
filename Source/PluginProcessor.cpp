@@ -26,7 +26,7 @@ OverdriveAAPAudioProcessor::OverdriveAAPAudioProcessor()
     inputGain = new juce::AudioParameterFloat("inputGain", "Input Gain", 0.0f, 10.0f, 1.0f);
     addParameter(inputGain);
 
-    // add dry wet slider
+    // add dry wet slider and set default to 0.5 (50/50 dry wet)
     dryWetMix = new juce::AudioParameterFloat("dryWetMix", "Dry / Wet Mix", 0.0f, 1.0f, 0.5f);
     addParameter(dryWetMix);
 
@@ -101,14 +101,15 @@ void OverdriveAAPAudioProcessor::changeProgramName (int index, const juce::Strin
 //==============================================================================
 void OverdriveAAPAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    // create spec
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = getTotalNumOutputChannels();
 
+    // send in spec to the prepare function
     dryWetMixer.prepare(spec);
-    // set up mixing rule
-    dryWetMixer.setMixingRule(juce::dsp::DryWetMixingRule::linear);
+
 
 }
 
