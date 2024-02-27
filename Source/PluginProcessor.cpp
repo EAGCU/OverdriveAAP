@@ -26,6 +26,10 @@ OverdriveAAPAudioProcessor::OverdriveAAPAudioProcessor()
     inputGain = new juce::AudioParameterFloat("inputGain", "Input Gain", 0.0f, 10.0f, 1.0f);
     addParameter(inputGain);
 
+    //dry wet slider - used in processblock
+    dryWetMix = new juce::AudioParameterFloat("dryWetMix", "Dry / Wet Mix", 0.0f, 1.0f, 0.5f);
+    addParameter(dryWetMix);
+
 }
 
 OverdriveAAPAudioProcessor::~OverdriveAAPAudioProcessor()
@@ -144,10 +148,15 @@ void OverdriveAAPAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    // == DRY / WET MIX
+    // get the dry/wet mix value from the slider
+    float mix = dryWetMix->get();
+
     // Audio processing loop
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         auto* channelData = buffer.getWritePointer (channel);
+
 
         // stores output sample we compute below
         float out = 0.0f;
@@ -189,8 +198,10 @@ void OverdriveAAPAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
             }
 
-            // Finally, assign 'out' to the position in the buffer
-            channelData[i] = out;        
+            // == DRY / WET MIX
+            // Finally, combine 'in' and 'out' scaled with the DRY/WET mix
+            channelData[i] = in * (1.0f - mix) + out * mix; 
+
         }
     }
 }
