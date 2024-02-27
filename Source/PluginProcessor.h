@@ -62,6 +62,13 @@ private:
 
     // set up float pointer for Input gain
     juce::AudioParameterFloat* inputGain;
+
+    // create dry wet float
+    juce::AudioParameterFloat* dryWetMix;
+
+    // create dryWetMixer class
+    juce::dsp::DryWetMixer<float> dryWetMixer;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OverdriveAAPAudioProcessor)
 };

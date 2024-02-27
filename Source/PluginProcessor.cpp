@@ -26,6 +26,10 @@ OverdriveAAPAudioProcessor::OverdriveAAPAudioProcessor()
     inputGain = new juce::AudioParameterFloat("inputGain", "Input Gain", 0.0f, 10.0f, 1.0f);
     addParameter(inputGain);
 
+    // add dry wet slider
+    dryWetMix = new juce::AudioParameterFloat("dryWetMix", "Dry / Wet Mix", 0.0f, 1.0f, 0.5f);
+    addParameter(dryWetMix);
+
 }
 
 OverdriveAAPAudioProcessor::~OverdriveAAPAudioProcessor()
@@ -97,8 +101,15 @@ void OverdriveAAPAudioProcessor::changeProgramName (int index, const juce::Strin
 //==============================================================================
 void OverdriveAAPAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = getTotalNumOutputChannels();
+
+    dryWetMixer.prepare(spec);
+    // set up mixing rule
+    dryWetMixer.setMixingRule(juce::dsp::DryWetMixingRule::linear);
+
 }
 
 void OverdriveAAPAudioProcessor::releaseResources()
@@ -143,6 +154,19 @@ void OverdriveAAPAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // channels that didn't contain input data.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
+
+        // == DRY/WET ==
+        // Create an AudioBlock for the dry samples 
+        juce::dsp::AudioBlock<float> dryBlock(buffer);
+
+        // == DRY/WET ==
+        // push in dry samples to our dryWetMixerObject
+        dryWetMixer.pushDrySamples(dryBlock);
+
+        // == DRY/WET ==
+        // get dry wet mix from slider and set mix proprtion
+        float mix = dryWetMix->get();
+        dryWetMixer.setWetMixProportion(mix); 
 
     // Audio processing loop
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
@@ -193,6 +217,13 @@ void OverdriveAAPAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             channelData[i] = out;        
         }
     }
+
+
+        // == DRY/WET ==
+        // at this poinnt, the buffer has been overwritten by 'wet' samples
+        // therefore, we can pass that in to mix the wet samples with the dry
+        dryWetMixer.mixWetSamples(buffer);
+    
 }
 
 // This function takes the signal as input, then returns 1, 0, or -1 to indicate the sign 
